@@ -61,7 +61,7 @@ with st.sidebar:
     st.divider()
 
     # ===== NAVIGATION BUTTONS =====
-    st.page_link("streamlit_app.py", label="Home Page")
+
 
     st.page_link("streamlit_app.py", label="Dashboard")
 
@@ -79,7 +79,7 @@ with st.sidebar:
 
     st.page_link("pages/Warehouse.py", label="Warehouse")
 
-    st.page_link("pages/Sensitivity_Testing.py", label="Sensitivity Testing")
+    st.page_link("pages/Sensitivity_Test.py", label="Sensitivity Testing")
 
 #####################################################
 # TITLE
