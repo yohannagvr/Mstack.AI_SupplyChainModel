@@ -46,44 +46,10 @@ p{
 </style>
 """, unsafe_allow_html=True)
 
-#####################################################
-# SIDEBAR
-#####################################################
-
-#st.sidebar.image(
-#    "assets/logo.png",
-#    use_container_width=True
-#)
+#SIDEBAR
 
 st.sidebar.title("MSTACK.AI")
-
 st.sidebar.caption("Supply Chain Carbon Intelligence")
-
-st.sidebar.divider()
-
-st.sidebar.success("Dashboard")
-
-st.sidebar.info(
-"""
-Select one of the modules below.
-
-🏭 Manufacturing
-
-🚚 VN Trucking
-
-⚓ VN Port
-
-🚢 Ocean Freight
-
-⚓ LA Port
-
-🚛 US Trucking
-
-🏢 Warehouse
-
-🧪 Sensitivity Testing
-"""
-)
 
 #####################################################
 # TITLE
