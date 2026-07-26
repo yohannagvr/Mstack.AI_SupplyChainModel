@@ -50,10 +50,10 @@ p{
 # SIDEBAR
 #####################################################
 
-st.sidebar.image(
-    "assets/logo.png",
-    use_container_width=True
-)
+#st.sidebar.image(
+#    "assets/logo.png",
+#    use_container_width=True
+#)
 
 st.sidebar.title("MSTACK.AI")
 
