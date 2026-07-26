@@ -48,8 +48,38 @@ p{
 
 #SIDEBAR
 
-st.sidebar.title("MSTACK.AI")
-st.sidebar.caption("Supply Chain Carbon Intelligence")
+with st.sidebar:
+
+    # ===== BRANDING =====
+    st.markdown("""
+    # 🌎 MSTACK.AI
+    # Mobilize Green
+
+    **Supply Chain Carbon Intelligence**
+    """)
+
+    st.divider()
+
+    # ===== NAVIGATION BUTTONS =====
+    st.page_link("streamlit_app.py", label="Home Page")
+
+    st.page_link("streamlit_app.py", label="Dashboard")
+
+    st.page_link("pages/Manufacturing.py", label="Manufacturing")
+
+    st.page_link("pages/VN_Trucking.py", label="Vietnam Trucking")
+
+    st.page_link("pages/VN_Port.py", label="Vietnam Port")
+
+    st.page_link("pages/Ocean_Freight.py", label="Ocean Freight")
+
+    st.page_link("pages/LA_Port.py", label="LA Port")
+
+    st.page_link("pages/US_Trucking.py", label="U.S. Trucking")
+
+    st.page_link("pages/Warehouse.py", label="Warehouse")
+
+    st.page_link("pages/Sensitivity_Testing.py", label="Sensitivity Testing")
 
 #####################################################
 # TITLE
