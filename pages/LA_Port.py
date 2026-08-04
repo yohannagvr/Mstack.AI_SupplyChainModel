@@ -4,13 +4,13 @@ import pandas as pd
 
 st.set_page_config(page_title="LA Port", layout="wide")
 
-st.title(" Los Angeles Port Operations")
+st.title("🇺🇸 Los Angeles Port — Terminal Operations")
 
-st.caption(
-    "Analyze emissions generated during cargo handling, unloading, storage, and terminal operations at the Port of Los Angeles."
-)
-
-st.divider()
+st.write("""
+This leg represents container handling and terminal operations at the
+U.S. port. Emissions include diesel crane and yard operations associated
+with handling the shipment.
+""")
 
 ##############################################################
 # INPUTS
@@ -22,49 +22,38 @@ with left:
 
     containers = st.number_input(
         "Containers Processed (TEU)",
-        value=240,
-        step=10
+        min_value=1,
+        value=1,
+        step=1
     )
 
     emission_factor = st.number_input(
         "Emission Factor (kg CO₂e / TEU)",
-        value=14.5,
-        step=0.5
+        min_value=0.0,
+        value=18.7,
+        step=0.1
     )
 
 with right:
 
-    electric_equipment = st.slider(
-        "Electric Cargo Equipment (%)",
-        0,
-        100,
-        35
+    scenario = st.selectbox(
+        "Scenario",
+        ["Scenario A"]
     )
 
-    terminal_efficiency = st.slider(
-        "Terminal Efficiency (%)",
-        50,
-        100,
-        82
+    terminal_type = st.selectbox(
+        "Terminal Operations",
+        ["Diesel crane + yard operations"]
     )
 
 ##############################################################
 # CALCULATIONS
 ##############################################################
 
-base = containers * emission_factor
+emissions = containers * emission_factor
 
-equipment_reduction = electric_equipment * 0.002
-
-efficiency_reduction = (terminal_efficiency - 50) * 0.003
-
-emissions = base * (
-    1
-    - equipment_reduction
-    - efficiency_reduction
-)
-
-TOTAL = 34200
+# Scenario A total supply-chain emissions
+TOTAL = 11221
 
 share = emissions / TOTAL * 100
 
@@ -78,31 +67,51 @@ with a:
 
     st.metric(
         "Port Emissions",
-        f"{emissions:,.0f} kg CO₂e"
+        f"{emissions:,.1f} kg CO₂e"
     )
 
 with b:
 
     st.metric(
         "% of Total",
-        f"{share:.1f}%"
+        f"{share:.2f}%"
     )
 
 with c:
 
     st.metric(
-        "Equipment Electrified",
-        f"{electric_equipment}%"
+        "Containers",
+        f"{containers} TEU"
     )
 
 with d:
 
     st.metric(
-        "Efficiency Score",
-        f"{terminal_efficiency}%"
+        "Emission Factor",
+        f"{emission_factor:.1f} kg/TEU"
     )
 
 st.divider()
+
+##############################################################
+# EMISSION FACTOR INFORMATION
+##############################################################
+
+st.subheader("Emission Factor")
+
+st.info("""
+### U.S. Port Terminal Handling
+
+**Emission Factor:** 18.7 kg CO₂e / TEU
+
+**Methodology:** Clean Cargo Working Group
+
+**Scope:** Diesel crane and yard operations
+
+The U.S. port factor is higher than the origin-port factor used
+in Scenario A because U.S. terminal operations have a higher
+reported emissions intensity.
+""")
 
 ##############################################################
 # CHARTS
@@ -110,18 +119,12 @@ st.divider()
 
 chart = pd.DataFrame({
 
-    "Source":[
-        "Cargo Equipment",
-        "Container Handling",
-        "Terminal Lighting",
-        "Buildings"
+    "Source": [
+        "U.S. Port Terminal Handling"
     ],
 
-    "Emissions":[
-        emissions*.45,
-        emissions*.30,
-        emissions*.15,
-        emissions*.10
+    "Emissions": [
+        emissions
     ]
 
 })
@@ -130,7 +133,7 @@ left, right = st.columns(2)
 
 with left:
 
-    st.subheader("Operational Emissions")
+    st.subheader("Port Emissions")
 
     fig = px.bar(
 
@@ -154,7 +157,9 @@ with left:
 
         font_color="white",
 
-        height=430
+        height=430,
+
+        coloraxis_showscale=False
 
     )
 
@@ -165,15 +170,29 @@ with left:
 
 with right:
 
-    st.subheader("Emission Breakdown")
+    st.subheader("Port Share of Supply Chain")
+
+    pie_data = pd.DataFrame({
+
+        "Category": [
+            "U.S. Port Handling",
+            "All Other Supply Chain Legs"
+        ],
+
+        "Emissions": [
+            emissions,
+            TOTAL - emissions
+        ]
+
+    })
 
     pie = px.pie(
 
-        chart,
+        pie_data,
 
         values="Emissions",
 
-        names="Source",
+        names="Category",
 
         hole=.60
 
@@ -195,34 +214,54 @@ with right:
     )
 
 ##############################################################
-# TERMINAL SCORECARD
+# SUPPLY CHAIN CONTEXT
 ##############################################################
 
 st.divider()
 
-st.subheader("Terminal Sustainability Score")
+st.subheader("Supply Chain Context")
 
-score = round(
-    (electric_equipment * 0.6)
-    + (terminal_efficiency * 0.4)
+st.write("""
+The U.S. port is one of the smallest contributors to the Scenario A
+carbon footprint. While terminal operations are necessary for transferring
+the container from ocean transportation to inland transportation, the
+associated emissions are relatively small compared with chemical
+manufacturing and ocean freight.
+""")
+
+context = pd.DataFrame({
+
+    "Supply Chain Leg": [
+        "Chemical Manufacturing",
+        "Ocean Freight",
+        "U.S. Inland Trucking",
+        "Warehousing / Storage",
+        "Factory-to-Port Trucking",
+        "U.S. Port Handling",
+        "Origin Port Handling"
+    ],
+
+    "Emissions (kg CO₂e)": [
+        7140,
+        3489,
+        416,
+        86,
+        59,
+        19,
+        12
+    ]
+
+})
+
+context["Share (%)"] = (
+    context["Emissions"] / TOTAL * 100
 )
 
-progress_color = "🟢"
-
-if score < 50:
-    progress_color = "🔴"
-
-elif score < 75:
-    progress_color = "🟡"
-
-st.metric(
-    "Overall Sustainability Score",
-    f"{score}/100"
+st.dataframe(
+    context,
+    use_container_width=True,
+    hide_index=True
 )
-
-st.progress(score/100)
-
-st.write(f"{progress_color} Current operational sustainability rating.")
 
 ##############################################################
 # REDUCTION OPPORTUNITIES
@@ -237,53 +276,45 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
+### Electrify Cargo Equipment
 
-###  Electrify Cargo Equipment
+Replace diesel-powered cranes, yard tractors, and other terminal
+equipment with electric alternatives where infrastructure allows.
 
-Transition diesel equipment to electric cranes and yard tractors.
-
-Expected Reduction
-
-15–30%
-
+Potential benefit:
+Lower direct fuel-related emissions from terminal operations.
 """)
 
     st.info("""
-
 ### Renewable Electricity
 
-Increase renewable energy usage across terminal operations.
+Increase the use of renewable electricity for electrically powered
+terminal equipment and facility operations.
 
-Expected Reduction
-
-5–20%
-
+Potential benefit:
+Further reduction in the emissions intensity of terminal activities.
 """)
 
 with col2:
 
     st.info("""
-
 ### Reduce Truck Idling
 
-Improve scheduling and appointment systems.
+Improve truck appointment scheduling and terminal coordination to
+reduce unnecessary waiting and idling around the port.
 
-Expected Reduction
-
-5–15%
-
+Potential benefit:
+Lower emissions associated with port-related truck activity.
 """)
 
     st.info("""
+### Improve Terminal Efficiency
 
-### Smart Terminal Automation
+Optimize container movement, equipment utilization, and yard
+organization to reduce unnecessary equipment activity.
 
-Use AI-driven logistics to reduce unnecessary equipment movement.
-
-Expected Reduction
-
-3–10%
-
+Potential benefit:
+Lower energy use per container handled.
 """)
 
 ##############################################################
@@ -295,13 +326,24 @@ st.divider()
 st.subheader("Executive Summary")
 
 st.write(f"""
+### Key Findings
 
-The Port of Los Angeles currently contributes approximately
-**{emissions:,.0f} kg CO₂e**, representing about
-**{share:.1f}%** of total supply chain emissions.
+The U.S. port handling leg contributes approximately
+**{emissions:,.1f} kg CO₂e per Scenario A shipment**.
 
-The largest contributors are cargo handling equipment and
-container movement. Electrification and operational efficiency
-offer the greatest opportunities for emissions reduction.
+This represents approximately **{share:.2f}%** of the total
+Scenario A supply-chain footprint of **{TOTAL:,} kg CO₂e**.
 
+The port emission factor is **18.7 kg CO₂e per TEU**, based on
+Clean Cargo Working Group data for U.S. terminal operations.
+
+Compared with the major emissions sources in the supply chain,
+U.S. port handling is a relatively minor contributor. Chemical
+manufacturing and ocean freight together account for the majority
+of the overall footprint.
+
+Therefore, port electrification and efficiency improvements are
+useful secondary reduction strategies, but the largest overall
+carbon reductions are expected to come from addressing the
+manufacturing and ocean-freight legs.
 """)
