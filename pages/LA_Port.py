@@ -4,7 +4,7 @@ import pandas as pd
 
 st.set_page_config(page_title="LA Port", layout="wide")
 
-st.title("🇺🇸 Los Angeles Port — Terminal Operations")
+st.title("US Los Angeles Port — Terminal Operations")
 
 st.write("""
 This leg represents container handling and terminal operations at the
@@ -241,7 +241,7 @@ context = pd.DataFrame({
         "Origin Port Handling"
     ],
 
-    "Emissions (kg CO₂e)": [
+    "Emissions": [
         7140,
         3489,
         416,
@@ -253,12 +253,20 @@ context = pd.DataFrame({
 
 })
 
+# Calculate each leg's percentage of total emissions
 context["Share (%)"] = (
     context["Emissions"] / TOTAL * 100
 )
 
+# Rename the emissions column only for display
+context_display = context.rename(
+    columns={
+        "Emissions": "Emissions (kg CO₂e)"
+    }
+)
+
 st.dataframe(
-    context,
+    context_display,
     use_container_width=True,
     hide_index=True
 )
