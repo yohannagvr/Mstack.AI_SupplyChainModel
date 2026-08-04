@@ -2,15 +2,30 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
-st.set_page_config(page_title="US Trucking", layout="wide")
+st.set_page_config(
+    page_title="US Trucking",
+    layout="wide"
+)
 
 st.title("🚛 U.S. Inland Trucking")
 
 st.caption(
-    "Estimate emissions generated while transporting products from the Port of Los Angeles to warehouses and distribution centers."
+    "Analyze emissions generated while transporting products "
+    "from the Port of Los Angeles to the distribution facility "
+    "under Scenario A."
 )
 
 st.divider()
+
+##############################################################
+# SCENARIO A DATA
+##############################################################
+
+CARGO_WEIGHT = 21.0
+DISTANCE = 320.0
+EMISSION_FACTOR = 0.062
+
+TOTAL_SUPPLY_CHAIN = 11221
 
 ##############################################################
 # INPUTS
@@ -20,62 +35,52 @@ left, right = st.columns(2)
 
 with left:
 
-    truck_type = st.selectbox(
-        "Truck Type",
-        [
-            "Diesel",
-            "Hybrid",
-            "Electric"
-        ]
+    cargo_weight = st.number_input(
+        "Cargo Weight (MT)",
+        min_value=0.0,
+        value=CARGO_WEIGHT,
+        step=1.0
     )
 
     distance = st.number_input(
         "Transportation Distance (km)",
-        value=1850,
-        step=50
+        min_value=0.0,
+        value=DISTANCE,
+        step=10.0
     )
 
 with right:
 
-    cargo_weight = st.number_input(
-        "Cargo Weight (tons)",
-        value=4800,
-        step=100
+    emission_factor = st.number_input(
+        "Emission Factor (kg CO₂e / tonne-km)",
+        min_value=0.0,
+        value=EMISSION_FACTOR,
+        step=0.001,
+        format="%.3f"
     )
 
-    load_factor = st.slider(
-        "Truck Load Factor (%)",
-        50,
-        100,
-        85
+    truck_type = st.selectbox(
+        "Vehicle Type",
+        [
+            "Diesel HGV (>26 tonnes)"
+        ]
     )
 
 ##############################################################
-# EMISSION FACTORS
+# CALCULATION
 ##############################################################
 
-if truck_type == "Diesel":
-    emission_factor = 0.18
+emissions = (
+    cargo_weight
+    * distance
+    * emission_factor
+)
 
-elif truck_type == "Hybrid":
-    emission_factor = 0.11
-
-else:
-    emission_factor = 0.04
-
-##############################################################
-# CALCULATIONS
-##############################################################
-
-base = cargo_weight * distance * emission_factor
-
-load_reduction = (load_factor - 50) * 0.004
-
-emissions = base * (1 - load_reduction)
-
-TOTAL = 34200
-
-share = emissions / TOTAL * 100
+share = (
+    emissions
+    / TOTAL_SUPPLY_CHAIN
+    * 100
+)
 
 ##############################################################
 # KPI CARDS
@@ -100,54 +105,113 @@ with b:
 with c:
 
     st.metric(
-        "Truck Type",
-        truck_type
+        "Distance",
+        f"{distance:,.0f} km"
     )
 
 with d:
 
     st.metric(
-        "Load Factor",
-        f"{load_factor}%"
+        "Cargo",
+        f"{cargo_weight:,.0f} MT"
     )
 
 st.divider()
 
 ##############################################################
-# CHARTS
+# EMISSION FACTOR INFORMATION
 ##############################################################
 
-comparison = pd.DataFrame({
+st.subheader("Emission Factor & Methodology")
 
-    "Truck":[
-        "Diesel",
-        "Hybrid",
-        "Electric"
+st.info("""
+### Diesel Heavy Goods Vehicle (>26 tonnes)
+
+**Emission Factor:** 0.062 kg CO₂e / tonne-km
+
+**Sources:** EPA MOVES / GLEC Framework
+
+The factor represents laden heavy-goods vehicle transportation.
+Unladen travel can have a higher emissions intensity per
+tonne-kilometer.
+""")
+
+##############################################################
+# CALCULATION BREAKDOWN
+##############################################################
+
+st.subheader("Emission Calculation")
+
+calculation = pd.DataFrame({
+
+    "Input": [
+        "Cargo Weight",
+        "Transportation Distance",
+        "Emission Factor"
     ],
 
-    "Emission Factor":[
-        0.18,
-        0.11,
-        0.04
+    "Value": [
+        f"{cargo_weight:,.0f} MT",
+        f"{distance:,.0f} km",
+        f"{emission_factor:.3f} kg CO₂e / tonne-km"
     ]
 
 })
 
+st.dataframe(
+    calculation,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.success(
+    f"""
+**Calculation:**
+
+{cargo_weight:,.0f} MT × {distance:,.0f} km ×
+{emission_factor:.3f} kg CO₂e/tonne-km
+
+= **{emissions:,.0f} kg CO₂e per shipment**
+"""
+)
+
+##############################################################
+# CHARTS
+##############################################################
+
 left, right = st.columns(2)
+
+##############################################################
+# EMISSION INTENSITY
+##############################################################
 
 with left:
 
-    st.subheader("Truck Type Comparison")
+    st.subheader("Transportation Emission Factor")
+
+    comparison = pd.DataFrame({
+
+        "Transportation Mode": [
+            "Diesel HGV (>26 tonnes)"
+        ],
+
+        "Emission Factor": [
+            emission_factor
+        ]
+
+    })
 
     fig = px.bar(
 
         comparison,
 
-        x="Truck",
+        x="Transportation Mode",
 
         y="Emission Factor",
 
-        color="Truck"
+        color="Emission Factor",
+
+        color_continuous_scale="Viridis"
 
     )
 
@@ -159,7 +223,13 @@ with left:
 
         font_color="white",
 
-        height=420
+        height=420,
+
+        coloraxis_showscale=False,
+
+        yaxis_title="kg CO₂e / tonne-km",
+
+        xaxis_title=""
 
     )
 
@@ -168,31 +238,36 @@ with left:
         use_container_width=True
     )
 
+##############################################################
+# SUPPLY CHAIN SHARE
+##############################################################
+
 with right:
 
-    st.subheader("Current Logistics Metrics")
+    st.subheader("Share of Scenario A Footprint")
 
-    metrics = pd.DataFrame({
+    other_emissions = max(
+        TOTAL_SUPPLY_CHAIN - emissions,
+        0
+    )
 
-        "Category":[
-            "Driving",
-            "Fuel",
-            "Idle Time",
-            "Loading"
+    share_data = pd.DataFrame({
+
+        "Category": [
+            "U.S. Inland Trucking",
+            "Other Supply Chain Legs"
         ],
 
-        "Emissions":[
-            emissions*0.62,
-            emissions*0.18,
-            emissions*0.10,
-            emissions*0.10
+        "Emissions": [
+            emissions,
+            other_emissions
         ]
 
     })
 
     pie = px.pie(
 
-        metrics,
+        share_data,
 
         names="Category",
 
@@ -218,46 +293,92 @@ with right:
     )
 
 ##############################################################
-# PERFORMANCE SCORE
+# CARBON INTENSITY
 ##############################################################
 
 st.divider()
 
-st.subheader("Fleet Performance")
-
-score = round(
-
-    load_factor * 0.55 +
-
-    (100 - emission_factor * 300) * 0.45
-
-)
-
-score = max(0, min(score,100))
-
-st.metric(
-    "Fleet Sustainability Score",
-    f"{score}/100"
-)
-
-st.progress(score/100)
-
-##############################################################
-# CARBON INTENSITY
-##############################################################
+st.subheader("Carbon Intensity")
 
 intensity = emissions / cargo_weight
 
-st.metric(
+a, b = st.columns(2)
 
-    "Carbon Intensity",
+with a:
 
-    f"{intensity:.2f} kg CO₂e / ton"
+    st.metric(
+        "Carbon Intensity",
+        f"{intensity:.2f} kg CO₂e / MT"
+    )
+
+with b:
+
+    st.metric(
+        "Emission Factor",
+        f"{emission_factor:.3f} kg CO₂e / tonne-km"
+    )
+
+##############################################################
+# SCENARIO A CONTEXT
+##############################################################
+
+st.divider()
+
+st.subheader("Scenario A Supply Chain Context")
+
+context = pd.DataFrame({
+
+    "Supply Chain Leg": [
+
+        "Chemical Manufacturing",
+        "Ocean Freight",
+        "U.S. Inland Trucking",
+        "Warehousing / Storage",
+        "Factory-to-Port Trucking",
+        "U.S. Port Handling",
+        "Origin Port Handling"
+
+    ],
+
+    "Emissions (kg CO₂e)": [
+
+        7140,
+        3489,
+        416,
+        86,
+        59,
+        19,
+        12
+
+    ]
+
+})
+
+context["Share (%)"] = (
+
+    context["Emissions (kg CO₂e)"]
+    / TOTAL_SUPPLY_CHAIN
+    * 100
 
 )
 
+context["Share (%)"] = (
+    context["Share (%)"].round(1)
+)
+
+context = context.sort_values(
+    "Emissions (kg CO₂e)",
+    ascending=False
+)
+
+st.dataframe(
+    context,
+    use_container_width=True,
+    hide_index=True
+)
+
 ##############################################################
-# RECOMMENDATIONS
+# REDUCTION OPPORTUNITIES
 ##############################################################
 
 st.divider()
@@ -269,53 +390,41 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
+### 🛣 Route Optimization
 
-### ⚡ Electrify Fleet
+Reduce unnecessary transportation distance through
+route planning and distribution-network optimization.
 
-Transition diesel trucks to electric vehicles.
-
-Expected Reduction
-
-40–75%
-
+**Primary lever:** Reduce tonne-km traveled.
 """)
 
     st.info("""
+### 📦 Increase Truck Utilization
 
-### 📦 Increase Load Factor
+Improve shipment consolidation and truck utilization
+to avoid unnecessary trips.
 
-Ship fuller loads to reduce trips.
-
-Expected Reduction
-
-5–15%
-
+**Primary lever:** Move more cargo per trip.
 """)
 
 with col2:
 
     st.info("""
+### ⚡ Lower-Carbon Trucking
 
-### 🛣 Route Optimization
+Evaluate lower-carbon trucking technologies and fuels
+as they become available for the required route.
 
-Reduce unnecessary mileage.
-
-Expected Reduction
-
-5–12%
-
+**Primary lever:** Reduce kg CO₂e per tonne-km.
 """)
 
     st.info("""
+### 🚦 Reduce Empty Miles
 
-### 🚦 Reduce Idle Time
+Coordinate inbound and outbound transportation to
+reduce unnecessary empty vehicle movements.
 
-Improve scheduling and loading efficiency.
-
-Expected Reduction
-
-2–8%
-
+**Primary lever:** Improve overall vehicle utilization.
 """)
 
 ##############################################################
@@ -327,16 +436,21 @@ st.divider()
 st.subheader("Executive Summary")
 
 st.write(f"""
+U.S. inland trucking contributes approximately
+**{emissions:,.0f} kg CO₂e per Scenario A shipment**.
 
-Current inland trucking emissions are approximately
-**{emissions:,.0f} kg CO₂e**.
+Based on the current model, this represents approximately
+**{share:.1f}%** of the total Scenario A supply-chain footprint
+of **{TOTAL_SUPPLY_CHAIN:,.0f} kg CO₂e**.
 
-This transportation stage contributes about
-**{share:.1f}%** of the supply chain's total
-greenhouse gas emissions.
+The Scenario A trucking leg consists of **{cargo_weight:,.0f} MT**
+of cargo transported approximately **{distance:,.0f} km** using a
+diesel heavy goods vehicle with an emission factor of
+**{emission_factor:.3f} kg CO₂e per tonne-km**.
 
-Selecting lower-carbon vehicles and improving
-truck utilization provides the greatest opportunity
-for reducing emissions during inland distribution.
-
+Compared with chemical manufacturing and ocean freight, U.S.
+inland trucking is a smaller contributor to the overall footprint.
+However, reducing transportation distance, improving truck
+utilization, and transitioning to lower-carbon freight
+technologies can still reduce emissions.
 """)
