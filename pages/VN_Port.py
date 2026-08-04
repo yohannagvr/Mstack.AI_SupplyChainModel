@@ -379,7 +379,7 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
-### ⚡ Electrify Cargo Equipment
+### Electrify Cargo Equipment
 
 Replace diesel cranes and yard equipment with
 electric alternatives where feasible.
@@ -389,7 +389,7 @@ during cargo handling.
 """)
 
     st.info("""
-### ☀ Renewable Electricity
+### Renewable Electricity
 
 Increase renewable electricity usage for terminal
 operations.
@@ -401,7 +401,7 @@ emissions.
 with col2:
 
     st.info("""
-### 🚢 Reduce Equipment Idle Time
+### Reduce Equipment Idle Time
 
 Improve scheduling and terminal coordination to
 reduce unnecessary equipment operation.
@@ -410,7 +410,7 @@ reduce unnecessary equipment operation.
 """)
 
     st.info("""
-### 📦 Terminal Optimization
+### Terminal Optimization
 
 Improve cargo movement and yard planning to reduce
 unnecessary equipment movements.

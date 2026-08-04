@@ -368,7 +368,7 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
-### 🌱 Lower-Carbon Marine Fuels
+### Lower-Carbon Marine Fuels
 
 Transition from conventional HFO toward lower-carbon marine fuels,
 including sustainable biofuel blends.
@@ -378,7 +378,7 @@ with ocean transportation.
 """)
 
     st.info("""
-### 🚢 Improve Vessel Efficiency
+### Improve Vessel Efficiency
 
 Use more efficient vessels and optimize vessel operations,
 including routing, speed, and loading.
@@ -389,7 +389,7 @@ including routing, speed, and loading.
 with col2:
 
     st.info("""
-### 📦 Increase Container Utilization
+### Increase Container Utilization
 
 Improve cargo utilization so available container capacity is used
 more efficiently.
@@ -399,7 +399,7 @@ cargo transported.
 """)
 
     st.info("""
-### 📍 Optimize Shipping Routes
+### Optimize Shipping Routes
 
 Evaluate routes, transshipment requirements, and sailing distances
 to minimize unnecessary ocean distance.

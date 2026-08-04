@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🧪 Sensitivity Testing & Scenario Analysis")
+st.title("Sensitivity Testing & Scenario Analysis")
 
 st.caption(
     "Evaluate how changes in supply-chain activity and emission factors "

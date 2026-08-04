@@ -408,7 +408,7 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
-### ☀ Renewable Electricity
+### Renewable Electricity
 
 Increase renewable electricity usage within warehouse
 operations.

@@ -390,7 +390,7 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
-### 🛣 Route Optimization
+### Route Optimization
 
 Reduce unnecessary transportation distance through
 route planning and distribution-network optimization.
@@ -399,7 +399,7 @@ route planning and distribution-network optimization.
 """)
 
     st.info("""
-### 📦 Increase Truck Utilization
+### Increase Truck Utilization
 
 Improve shipment consolidation and truck utilization
 to avoid unnecessary trips.
@@ -410,7 +410,7 @@ to avoid unnecessary trips.
 with col2:
 
     st.info("""
-### ⚡ Lower-Carbon Trucking
+### Lower-Carbon Trucking
 
 Evaluate lower-carbon trucking technologies and fuels
 as they become available for the required route.
@@ -419,7 +419,7 @@ as they become available for the required route.
 """)
 
     st.info("""
-### 🚦 Reduce Empty Miles
+### Reduce Empty Miles
 
 Coordinate inbound and outbound transportation to
 reduce unnecessary empty vehicle movements.
