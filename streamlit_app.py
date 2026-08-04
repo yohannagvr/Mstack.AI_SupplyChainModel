@@ -92,40 +92,50 @@ st.caption(
 )
 
 #####################################################
-# SAMPLE DATA
+# SCENARIO A DATA
 #####################################################
 
-df=pd.DataFrame({
+df = pd.DataFrame({
 
-"Stage":[
-"Manufacturing",
-"VN Truck",
-"VN Port",
-"Ocean",
-"LA Port",
-"US Truck",
-"Warehouse"
-],
+    "Stage": [
+        "Chemical Manufacturing",
+        "Factory-to-Port Trucking",
+        "Origin Port Handling",
+        "Ocean Freight",
+        "U.S. Port Handling",
+        "U.S. Inland Trucking",
+        "Warehousing / Storage"
+    ],
 
-"Emissions":[
-8200,
-1400,
-900,
-18900,
-700,
-3200,
-900
-]
+    "Emissions": [
+        7140,
+        59,
+        12,
+        3489,
+        19,
+        416,
+        86
+    ]
 
 })
 
-total=df.Emissions.sum()
+total = df["Emissions"].sum()
+
+#####################################################
+# CALCULATE EMISSION SHARES
+#####################################################
+
+df["Share"] = (df["Emissions"] / total) * 100
+
+highest = df.loc[df["Emissions"].idxmax(), "Stage"]
+highest_value = df["Emissions"].max()
+highest_percent = df.loc[df["Emissions"].idxmax(), "Share"]
 
 #####################################################
 # KPI CARDS
 #####################################################
 
-c1,c2,c3,c4=st.columns(4)
+c1, c2, c3, c4 = st.columns(4)
 
 with c1:
 
@@ -138,7 +148,7 @@ with c2:
 
     st.metric(
         "Highest Source",
-        "Ocean Freight"
+        highest
     )
 
 with c3:
@@ -152,7 +162,7 @@ with c4:
 
     st.metric(
         "Average / Leg",
-        f"{round(total/7):,} kg"
+        f"{round(total / 7):,} kg"
     )
 
 st.divider()
@@ -161,13 +171,13 @@ st.divider()
 # CHARTS
 #####################################################
 
-left,right=st.columns([1.1,1])
+left, right = st.columns([1.1, 1])
 
 with left:
 
     st.subheader("Emission Hotspots")
 
-    fig=px.bar(
+    fig = px.bar(
         df.sort_values(
             "Emissions",
             ascending=True
@@ -176,14 +186,19 @@ with left:
         y="Stage",
         orientation="h",
         color="Emissions",
-        color_continuous_scale="Viridis"
+        color_continuous_scale="Viridis",
+        labels={
+            "Emissions": "kg CO₂e",
+            "Stage": ""
+        }
     )
 
     fig.update_layout(
         height=430,
         paper_bgcolor="#0f172a",
         plot_bgcolor="#0f172a",
-        font_color="white"
+        font_color="white",
+        coloraxis_showscale=False
     )
 
     st.plotly_chart(
@@ -195,17 +210,23 @@ with right:
 
     st.subheader("Share of Total Emissions")
 
-    pie=px.pie(
+    pie = px.pie(
         df,
         names="Stage",
         values="Emissions",
         hole=.65
     )
 
+    pie.update_traces(
+        textposition="outside",
+        textinfo="label+percent"
+    )
+
     pie.update_layout(
         height=430,
         paper_bgcolor="#0f172a",
-        font_color="white"
+        font_color="white",
+        showlegend=False
     )
 
     st.plotly_chart(
@@ -219,35 +240,35 @@ with right:
 
 st.divider()
 
-st.subheader("Supply Chain Flow")
+st.subheader("Scenario A Supply Chain Flow")
 
 st.markdown("""
 
-🏭 Manufacturing
+**Chemical Manufacturing — SE Asia**
 
 ⬇
 
-🚚 Vietnam Trucking
+**Factory-to-Port Trucking**
 
 ⬇
 
-⚓ Vietnam Port
+**Origin Port Handling**
 
 ⬇
 
-🚢 Ocean Freight
+**Ocean Freight**
 
 ⬇
 
-⚓ Los Angeles Port
+**U.S. Port Handling**
 
 ⬇
 
-🚛 US Trucking
+**U.S. Inland Trucking**
 
 ⬇
 
-🏢 Warehousing
+**Warehousing / Storage**
 
 """)
 
@@ -259,18 +280,28 @@ st.divider()
 
 st.subheader("Executive Summary")
 
-highest=df.loc[df.Emissions.idxmax(),"Stage"]
-
-percent=round(df.Emissions.max()/total*100,1)
+# Calculate combined contribution of manufacturing + ocean
+top_two = df.nlargest(2, "Emissions")
+top_two_total = top_two["Emissions"].sum()
+top_two_percent = (top_two_total / total) * 100
 
 st.info(f"""
 ### Key Findings
 
-• Total emissions are **{total:,} kg CO₂e**
+• **Total Scenario A emissions are {total:,} kg CO₂e per shipment.**
 
-• **{highest}** contributes the largest share (**{percent}%**) of emissions.
+• **{highest}** is the largest emissions source, producing 
+**{highest_value:,} kg CO₂e ({highest_percent:.1f}% of the total footprint).**
 
-• Ocean transportation dominates the carbon footprint and should be prioritized for reduction initiatives.
+• **Ocean Freight** produces **3,489 kg CO₂e**, representing 
+**{df.loc[df["Stage"] == "Ocean Freight", "Share"].iloc[0]:.1f}%** of total emissions.
 
-• Use the sidebar to analyze each leg of the supply chain individually.
+• **Chemical Manufacturing + Ocean Freight account for {top_two_percent:.1f}% 
+of the total carbon footprint.**
+
+• The largest opportunities for emissions reduction are therefore concentrated 
+in **upstream chemical manufacturing and ocean transportation**, rather than 
+port handling or warehousing.
+
+• Use the sidebar to analyze each supply-chain leg individually.
 """)
