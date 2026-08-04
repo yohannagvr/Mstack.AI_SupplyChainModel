@@ -7,13 +7,27 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🏢 Warehousing & Distribution")
+st.title("Warehousing & Distribution")
 
 st.caption(
-    "Estimate emissions generated during warehouse operations and distribution activities."
+    "Analyze emissions generated while products are stored "
+    "and handled within the U.S. warehouse and distribution network."
 )
 
 st.divider()
+
+##############################################################
+# SCENARIO A DATA
+##############################################################
+
+CARGO_WEIGHT = 21.0
+DWELL_TIME = 0.5
+EMISSION_FACTOR = 8.2
+
+TOTAL_SUPPLY_CHAIN = 11221
+
+# Official Scenario A value from supplied model
+BASELINE_EMISSIONS = 86
 
 ##############################################################
 # INPUTS
@@ -23,55 +37,66 @@ left, right = st.columns(2)
 
 with left:
 
-    warehouse_area = st.number_input(
-        "Warehouse Size (m²)",
-        value=25000,
-        step=1000
+    cargo_weight = st.number_input(
+        "Material Stored (MT)",
+        min_value=0.0,
+        value=CARGO_WEIGHT,
+        step=1.0
     )
 
-    electricity = st.number_input(
-        "Annual Electricity Usage (kWh)",
-        value=1250000,
-        step=50000
+    dwell_time = st.number_input(
+        "Average Warehouse Dwell Time (months)",
+        min_value=0.0,
+        value=DWELL_TIME,
+        step=0.25
     )
 
 with right:
 
-    renewable = st.slider(
-        "Renewable Electricity (%)",
-        0,
-        100,
-        30
+    emission_factor = st.number_input(
+        "Emission Factor (kg CO₂e / MT / month)",
+        min_value=0.0,
+        value=EMISSION_FACTOR,
+        step=0.1
     )
 
-    electric_forklifts = st.slider(
-        "Electric Forklifts (%)",
-        0,
-        100,
-        60
+    scenario = st.selectbox(
+        "Modeling Basis",
+        [
+            "Scenario A — Baseline",
+            "Custom Sensitivity"
+        ]
     )
 
 ##############################################################
 # CALCULATIONS
 ##############################################################
 
-grid_factor = 0.40
-
-base = electricity * grid_factor
-
-renewable_reduction = renewable * 0.003
-
-forklift_reduction = electric_forklifts * 0.002
-
-emissions = base * (
-    1
-    - renewable_reduction
-    - forklift_reduction
+calculated_emissions = (
+    cargo_weight
+    * dwell_time
+    * emission_factor
 )
 
-TOTAL = 34200
+# Use official Scenario A value when baseline inputs are selected
+if (
+    scenario == "Scenario A — Baseline"
+    and cargo_weight == CARGO_WEIGHT
+    and dwell_time == DWELL_TIME
+    and emission_factor == EMISSION_FACTOR
+):
 
-share = emissions / TOTAL * 100
+    emissions = BASELINE_EMISSIONS
+
+else:
+
+    emissions = calculated_emissions
+
+share = (
+    emissions
+    / TOTAL_SUPPLY_CHAIN
+    * 100
+)
 
 ##############################################################
 # KPI CARDS
@@ -89,46 +114,117 @@ with a:
 with b:
 
     st.metric(
-        "% of Total",
+        "Share of Scenario A",
         f"{share:.1f}%"
     )
 
 with c:
 
     st.metric(
-        "Warehouse Size",
-        f"{warehouse_area:,} m²"
+        "Material Stored",
+        f"{cargo_weight:,.0f} MT"
     )
 
 with d:
 
     st.metric(
-        "Renewable Energy",
-        f"{renewable}%"
+        "Average Dwell",
+        f"{dwell_time:.2f} months"
     )
 
 st.divider()
 
 ##############################################################
-# BREAKDOWN
+# METHODOLOGY
 ##############################################################
+
+st.subheader("Emission Factor & Methodology")
+
+st.info("""
+### U.S. Warehouse Storage
+
+**Emission Factor:** 8.2 kg CO₂e / MT / month
+
+**Source:** GHG Protocol Scope 3 / EPA eGRID
+
+The factor represents emissions associated with warehouse
+storage based on material quantity and average dwell time.
+
+Scenario A assumes **21 MT** of material with an average
+warehouse dwell time of **0.5 months**.
+""")
+
+##############################################################
+# CALCULATION
+##############################################################
+
+st.subheader("Emission Calculation")
+
+calculation = pd.DataFrame({
+
+    "Input": [
+        "Material Stored",
+        "Average Dwell Time",
+        "Emission Factor"
+    ],
+
+    "Value": [
+        f"{cargo_weight:,.0f} MT",
+        f"{dwell_time:.2f} months",
+        f"{emission_factor:.1f} kg CO₂e / MT / month"
+    ]
+
+})
+
+st.dataframe(
+    calculation,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.success(
+    f"""
+**Calculation:**
+
+{cargo_weight:,.0f} MT × {dwell_time:.2f} months ×
+{emission_factor:.1f} kg CO₂e/MT/month
+
+Calculated result:
+**{calculated_emissions:,.2f} kg CO₂e**
+
+Scenario A reported value:
+**{emissions:,.0f} kg CO₂e**
+"""
+)
+
+##############################################################
+# EMISSION BREAKDOWN
+##############################################################
+
+st.divider()
+
+st.subheader("Warehouse Emission Sources")
+
+# Operational breakdown used for visualization only.
+# The total remains tied to the documented warehouse
+# emission factor calculation above.
 
 breakdown = pd.DataFrame({
 
-    "Source":[
+    "Source": [
         "Lighting",
         "HVAC",
-        "Forklifts",
-        "Equipment",
-        "Office"
+        "Material Handling",
+        "Building Systems",
+        "Other Operations"
     ],
 
-    "Emissions":[
-        emissions*.20,
-        emissions*.35,
-        emissions*.22,
-        emissions*.15,
-        emissions*.08
+    "Emissions": [
+        emissions * 0.20,
+        emissions * 0.35,
+        emissions * 0.22,
+        emissions * 0.15,
+        emissions * 0.08
     ]
 
 })
@@ -137,7 +233,7 @@ left, right = st.columns(2)
 
 with left:
 
-    st.subheader("Warehouse Emissions")
+    st.subheader("Operational Emissions")
 
     fig = px.bar(
 
@@ -202,27 +298,105 @@ with right:
     )
 
 ##############################################################
-# SUSTAINABILITY SCORE
+# SCENARIO A SUPPLY CHAIN CONTEXT
 ##############################################################
 
 st.divider()
 
-st.subheader("Warehouse Sustainability Score")
+st.subheader("Scenario A Supply Chain Context")
 
-score = round(
-    renewable * 0.6 +
-    electric_forklifts * 0.4
+context = pd.DataFrame({
+
+    "Supply Chain Leg": [
+
+        "Chemical Manufacturing",
+        "Ocean Freight",
+        "U.S. Inland Trucking",
+        "Warehousing / Distribution",
+        "Factory-to-Port Trucking",
+        "U.S. Port Handling",
+        "Origin Port Handling"
+
+    ],
+
+    "Emissions (kg CO₂e)": [
+
+        7140,
+        3489,
+        416,
+        86,
+        59,
+        19,
+        12
+
+    ]
+
+})
+
+context["Share (%)"] = (
+    context["Emissions (kg CO₂e)"]
+    / TOTAL_SUPPLY_CHAIN
+    * 100
 )
 
-st.metric(
-    "Overall Score",
-    f"{score}/100"
+context["Share (%)"] = (
+    context["Share (%)"].round(1)
 )
 
-st.progress(score/100)
+context = context.sort_values(
+    "Emissions (kg CO₂e)",
+    ascending=False
+)
+
+st.dataframe(
+    context,
+    use_container_width=True,
+    hide_index=True
+)
 
 ##############################################################
-# RECOMMENDATIONS
+# INTERPRETATION
+##############################################################
+
+st.divider()
+
+st.subheader("Interpretation")
+
+if share > 10:
+
+    st.error(
+        f"""
+Warehousing contributes approximately **{share:.1f}%**
+of Scenario A emissions and represents a significant
+supply-chain emissions source.
+"""
+    )
+
+elif share > 3:
+
+    st.warning(
+        f"""
+Warehousing contributes approximately **{share:.1f}%**
+of Scenario A emissions and represents a moderate
+emissions source.
+"""
+    )
+
+else:
+
+    st.success(
+        f"""
+Warehousing contributes approximately **{share:.1f}%**
+of Scenario A emissions.
+
+This is a relatively small contributor compared with
+chemical manufacturing, ocean freight, and U.S. inland
+trucking.
+"""
+    )
+
+##############################################################
+# REDUCTION OPPORTUNITIES
 ##############################################################
 
 st.divider()
@@ -234,53 +408,41 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.info("""
+### ☀ Renewable Electricity
 
-### ☀ Install Solar Panels
+Increase renewable electricity usage within warehouse
+operations.
 
-Reduce grid electricity dependence.
-
-Expected Reduction
-
-15–40%
-
+**Primary lever:** Reduce electricity-related emissions.
 """)
 
     st.info("""
+### Electrify Material Handling
 
-### ⚡ Electrify Equipment
+Replace fossil-fuel-powered forklifts and handling
+equipment with electric alternatives.
 
-Replace propane equipment with electric alternatives.
-
-Expected Reduction
-
-10–25%
-
+**Primary lever:** Reduce operational fuel emissions.
 """)
 
 with col2:
 
     st.info("""
+### Energy-Efficient Lighting
 
-### 💡 LED Lighting
+Use LED lighting and automated controls to reduce
+warehouse electricity demand.
 
-Upgrade warehouse lighting systems.
-
-Expected Reduction
-
-5–12%
-
+**Primary lever:** Reduce building energy consumption.
 """)
 
     st.info("""
+### HVAC Optimization
 
-### ❄ HVAC Optimization
+Improve temperature controls, insulation, and HVAC
+efficiency.
 
-Use smart climate control systems.
-
-Expected Reduction
-
-8–18%
-
+**Primary lever:** Reduce heating and cooling energy use.
 """)
 
 ##############################################################
@@ -292,17 +454,20 @@ st.divider()
 st.subheader("Executive Summary")
 
 st.write(f"""
+U.S. warehousing and distribution contributes approximately
+**{emissions:,.0f} kg CO₂e per Scenario A shipment**.
 
-Current warehouse emissions are estimated at
-**{emissions:,.0f} kg CO₂e**.
+This represents approximately **{share:.1f}%** of the
+**{TOTAL_SUPPLY_CHAIN:,.0f} kg CO₂e** Scenario A supply-chain
+footprint.
 
-This stage contributes approximately
-**{share:.1f}%** of total supply chain emissions.
+The calculation is based on **{cargo_weight:,.0f} MT** of material,
+an average dwell time of **{dwell_time:.2f} months**, and an emission
+factor of **{emission_factor:.1f} kg CO₂e per MT per month**.
 
-Increasing renewable electricity usage,
-electrifying forklifts,
-and improving HVAC efficiency represent the
-largest opportunities for reducing emissions
-within warehouse operations.
-
+Warehousing is a relatively small contributor in the current
+Scenario A model. While energy efficiency, renewable electricity,
+and electrification can reduce warehouse emissions, the largest
+decarbonization opportunities remain concentrated in chemical
+manufacturing and ocean freight.
 """)

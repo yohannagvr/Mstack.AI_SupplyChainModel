@@ -7,7 +7,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🚚 Vietnam Trucking")
+st.title("Vietnam Trucking")
 
 st.caption(
     "Analyze factory-to-port trucking emissions in Vietnam "
