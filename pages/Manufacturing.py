@@ -237,7 +237,7 @@ total Scenario A carbon footprint.
     )
 
 # ----------------------------------------------------
-# Emission Context
+# Scenario A Emission Context
 # ----------------------------------------------------
 
 st.divider()
@@ -268,14 +268,21 @@ context = pd.DataFrame({
 
 })
 
+# Calculate percentage contribution
 context["Share (%)"] = (
-    context["Emissions (kg CO₂e)"] / TOTAL_SUPPLY_CHAIN
+    context["Emissions (kg CO₂e)"]
+    / TOTAL_SUPPLY_CHAIN
+    * 100
 )
 
+# Sort by emissions from highest to lowest
 context = context.sort_values(
-    "Emissions",
+    "Emissions (kg CO₂e)",
     ascending=False
 )
+
+# Round percentage for cleaner display
+context["Share (%)"] = context["Share (%)"].round(1)
 
 st.dataframe(
     context,
