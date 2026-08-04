@@ -269,7 +269,7 @@ context = pd.DataFrame({
 })
 
 context["Share (%)"] = (
-    context["Emissions"] / TOTAL_SUPPLY_CHAIN * 100
+    context["Emissions (kg CO₂e)"] / TOTAL_SUPPLY_CHAIN
 )
 
 context = context.sort_values(
