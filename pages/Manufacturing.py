@@ -28,12 +28,12 @@ div[data-testid="metric-container"]{
 # Header
 # ----------------------------------------------------
 
-st.title("🏭 Chemical Manufacturing")
+st.title("Chemical Manufacturing")
 
 st.caption(
 """
-Estimate emissions generated during the manufacturing
-stage of the supply chain.
+Estimate emissions generated during the chemical manufacturing
+stage of the Scenario A supply chain.
 """
 )
 
@@ -43,38 +43,34 @@ st.divider()
 # User Inputs
 # ----------------------------------------------------
 
-left,right = st.columns([1,1])
+left, right = st.columns([1, 1])
 
 with left:
 
     production = st.number_input(
-        "Annual Production Volume (tons)",
+        "Production Volume per Shipment (MT)",
         min_value=0.0,
-        value=5000.0,
-        step=100.0
+        value=21.0,
+        step=1.0
     )
 
     emission_factor = st.number_input(
-        "Emission Factor (kg CO₂e / ton)",
+        "Emission Factor (kg CO₂e / MT)",
         min_value=0.0,
-        value=1.64,
-        step=0.01
+        value=340.0,
+        step=1.0
     )
 
 with right:
 
-    renewable_share = st.slider(
-        "Renewable Energy Usage (%)",
-        0,
-        100,
-        25
+    scenario = st.selectbox(
+        "Scenario",
+        ["Scenario A"]
     )
 
-    efficiency = st.slider(
-        "Manufacturing Efficiency (%)",
-        50,
-        100,
-        80
+    manufacturing_region = st.selectbox(
+        "Manufacturing Region",
+        ["SE Asia"]
     )
 
 # ----------------------------------------------------
@@ -83,21 +79,14 @@ with right:
 
 base_emissions = production * emission_factor
 
-renewable_reduction = renewable_share * 0.002
+# Scenario A total supply-chain emissions
+TOTAL_SUPPLY_CHAIN = 11221
 
-efficiency_reduction = (efficiency - 50) * 0.003
-
-adjusted = base_emissions * (
-    1
-    - renewable_reduction
-    - efficiency_reduction
+share = (
+    base_emissions / TOTAL_SUPPLY_CHAIN * 100
+    if TOTAL_SUPPLY_CHAIN > 0
+    else 0
 )
-
-adjusted = max(adjusted,0)
-
-TOTAL_SUPPLY_CHAIN = 34200
-
-share = adjusted / TOTAL_SUPPLY_CHAIN * 100
 
 # ----------------------------------------------------
 # KPIs
@@ -105,13 +94,13 @@ share = adjusted / TOTAL_SUPPLY_CHAIN * 100
 
 st.divider()
 
-c1,c2,c3 = st.columns(3)
+c1, c2, c3 = st.columns(3)
 
 with c1:
 
     st.metric(
         "Manufacturing Emissions",
-        f"{adjusted:,.0f} kg CO₂e"
+        f"{base_emissions:,.0f} kg CO₂e"
     )
 
 with c2:
@@ -124,9 +113,33 @@ with c2:
 with c3:
 
     st.metric(
-        "Renewable Usage",
-        f"{renewable_share}%"
+        "Production Volume",
+        f"{production:,.0f} MT"
     )
+
+# ----------------------------------------------------
+# Emission Factor Information
+# ----------------------------------------------------
+
+st.divider()
+
+st.subheader("Emission Factor & Methodology")
+
+st.info("""
+### Specialty Chemical Manufacturing — SE Asia
+
+**Emission Factor:** 340 kg CO₂e / MT produced
+
+**Source:** IEA Chemical Sector Analysis 2024 / Ecoinvent
+
+**Application:** Average specialty chemical manufacturing in
+Southeast Asia.
+
+The emission factor is applied directly to the quantity of chemical
+produced. It represents the manufacturing-stage carbon footprint
+before transportation, port handling, and warehousing emissions are
+added.
+""")
 
 # ----------------------------------------------------
 # Gauge
@@ -140,21 +153,29 @@ fig = go.Figure(go.Indicator(
 
     value=share,
 
-    number={"suffix":"%"},
+    number={"suffix": "%"},
+
+    title={
+        "text": "Manufacturing Share of Scenario A"
+    },
 
     gauge={
 
-        "axis":{"range":[0,100]},
+        "axis": {
+            "range": [0, 100]
+        },
 
-        "bar":{"color":"green"},
+        "bar": {
+            "color": "green"
+        },
 
-        "steps":[
+        "steps": [
 
-            {"range":[0,20],"color":"#14532d"},
-            {"range":[20,40],"color":"#166534"},
-            {"range":[40,60],"color":"#facc15"},
-            {"range":[60,80],"color":"#f97316"},
-            {"range":[80,100],"color":"#dc2626"}
+            {"range": [0, 20], "color": "#14532d"},
+            {"range": [20, 40], "color": "#166534"},
+            {"range": [40, 60], "color": "#facc15"},
+            {"range": [60, 80], "color": "#f97316"},
+            {"range": [80, 100], "color": "#dc2626"}
 
         ]
 
@@ -168,10 +189,13 @@ fig.update_layout(
     height=350
 )
 
-st.plotly_chart(fig,use_container_width=True)
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
 
 # ----------------------------------------------------
-# Explanation
+# Interpretation
 # ----------------------------------------------------
 
 st.subheader("Interpretation")
@@ -179,33 +203,83 @@ st.subheader("Interpretation")
 if share > 40:
 
     st.error(
-        """
-Manufacturing is currently one of the
-largest contributors to overall emissions.
-Reducing emissions here could significantly
-lower the company's carbon footprint.
+        f"""
+Manufacturing is the **largest emissions source** in Scenario A.
+
+At **{base_emissions:,.0f} kg CO₂e**, manufacturing represents
+approximately **{share:.1f}%** of the total supply-chain footprint.
+
+Because manufacturing accounts for more than half of total emissions,
+decarbonizing the production process represents one of the largest
+potential opportunities for reducing the overall carbon footprint.
 """
     )
 
 elif share > 20:
 
     st.warning(
-        """
-Manufacturing contributes a moderate
-portion of total emissions.
-Efficiency improvements may provide
-meaningful reductions.
+        f"""
+Manufacturing contributes a significant portion of the total
+supply-chain footprint, accounting for approximately **{share:.1f}%**
+of emissions.
 """
     )
 
 else:
 
     st.success(
-        """
-Manufacturing is not currently
-the dominant emission source.
+        f"""
+Manufacturing contributes approximately **{share:.1f}%** of the
+total Scenario A carbon footprint.
 """
     )
+
+# ----------------------------------------------------
+# Emission Context
+# ----------------------------------------------------
+
+st.divider()
+
+st.subheader("Scenario A Emission Context")
+
+context = pd.DataFrame({
+
+    "Supply Chain Leg": [
+        "Chemical Manufacturing",
+        "Ocean Freight",
+        "U.S. Inland Trucking",
+        "Warehousing / Storage",
+        "Factory-to-Port Trucking",
+        "U.S. Port Handling",
+        "Origin Port Handling"
+    ],
+
+    "Emissions (kg CO₂e)": [
+        7140,
+        3489,
+        416,
+        86,
+        59,
+        19,
+        12
+    ]
+
+})
+
+context["Share (%)"] = (
+    context["Emissions"] / TOTAL_SUPPLY_CHAIN * 100
+)
+
+context = context.sort_values(
+    "Emissions",
+    ascending=False
+)
+
+st.dataframe(
+    context,
+    use_container_width=True,
+    hide_index=True
+)
 
 # ----------------------------------------------------
 # Reduction Opportunities
@@ -215,50 +289,48 @@ st.divider()
 
 st.subheader("Emission Reduction Opportunities")
 
-col1,col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
 with col1:
 
     st.info("""
-###  Renewable Electricity
+### Renewable Energy
 
-Increase renewable electricity purchases.
+Increase renewable electricity and lower-carbon energy sources
+used in chemical manufacturing.
 
-Expected reduction:
-
-**10–35%**
+**Potential strategy:** Reduce dependence on carbon-intensive
+electricity generation and fossil fuels.
 """)
 
     st.info("""
-###  Process Optimization
+### Process Optimization
 
-Improve equipment efficiency.
+Improve production efficiency, equipment utilization, and process
+control to reduce energy consumption per metric ton produced.
 
-Expected reduction:
-
-**5–15%**
+**Potential strategy:** Lower energy intensity per MT of chemical.
 """)
 
 with col2:
 
     st.info("""
-###  Sustainable Raw Materials
+### Lower-Carbon Feedstocks
 
-Source lower-carbon feedstocks.
+Evaluate alternative raw materials and feedstocks with lower
+embedded carbon emissions.
 
-Expected reduction:
-
-**5–20%**
+**Potential strategy:** Reduce upstream emissions associated with
+chemical inputs.
 """)
 
     st.info("""
 ### Waste Heat Recovery
 
-Recover heat from manufacturing processes.
+Recover and reuse heat generated during manufacturing processes.
 
-Expected reduction:
-
-**3–10%**
+**Potential strategy:** Reduce additional fuel and electricity
+requirements for process heating.
 """)
 
 # ----------------------------------------------------

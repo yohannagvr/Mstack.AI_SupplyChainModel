@@ -334,8 +334,7 @@ st.divider()
 st.subheader("Executive Summary")
 
 st.write(f"""
-### Key Findings
-
+### 
 The U.S. port handling leg contributes approximately
 **{emissions:,.1f} kg CO₂e per Scenario A shipment**.
 
