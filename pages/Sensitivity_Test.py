@@ -11,245 +11,338 @@ st.set_page_config(
 st.title("🧪 Sensitivity Testing & Scenario Analysis")
 
 st.caption(
-    "Evaluate how operational decisions affect total supply chain emissions."
+    "Evaluate how changes in supply-chain activity and emission factors "
+    "affect the Scenario A carbon footprint."
 )
 
 st.divider()
 
 #############################################################
-# BASELINE
+# BASELINE SCENARIO A
 #############################################################
 
-BASELINE = 34200
+BASELINE = 11221
+
+#############################################################
+# BASELINE EMISSION FACTORS
+#############################################################
+
+MANUFACTURING_EF = 340.0
+ORIGIN_TRUCK_EF = 0.062
+ORIGIN_PORT_EF = 12.4
+OCEAN_EF = 0.0117
+US_PORT_EF = 18.7
+US_TRUCK_EF = 0.062
+WAREHOUSE_EF = 8.2
+
+#############################################################
+# BASELINE ACTIVITY DATA
+#############################################################
+
+MANUFACTURING_MT = 21
+ORIGIN_TRUCK_DISTANCE = 45
+ORIGIN_TEUS = 1
+OCEAN_DISTANCE = 14200
+US_PORT_TEUS = 1
+US_TRUCK_DISTANCE = 320
+WAREHOUSE_MONTHS = 0.5
 
 #############################################################
 # INPUTS
 #############################################################
 
-left,right = st.columns(2)
+st.subheader("Sensitivity Inputs")
+
+left, right = st.columns(2)
 
 with left:
 
-    vessel = st.selectbox(
+    st.markdown("### Manufacturing")
 
-        "Vessel Type",
-
-        [
-            "Conventional",
-            "Panamax",
-            "New Panamax"
-        ]
-
+    manufacturing_factor = st.number_input(
+        "Manufacturing Emission Factor (kg CO₂e / MT)",
+        min_value=0.0,
+        value=MANUFACTURING_EF,
+        step=5.0
     )
 
-    shipments = st.selectbox(
+    st.markdown("### Ocean Freight")
 
-        "Shipping Frequency",
+    ocean_distance = st.number_input(
+        "Ocean Distance (km)",
+        min_value=0.0,
+        value=float(OCEAN_DISTANCE),
+        step=100.0
+    )
 
-        [
-            "24 Shipments / Year",
-            "12 Shipments / Year"
-        ]
-
+    ocean_factor = st.number_input(
+        "Ocean Emission Factor (kg CO₂e / tonne-km)",
+        min_value=0.0,
+        value=OCEAN_EF,
+        step=0.0001,
+        format="%.4f"
     )
 
 with right:
 
-    load = st.selectbox(
+    st.markdown("### U.S. Inland Trucking")
 
-        "Container Fill",
-
-        [
-            "80%",
-            "95%"
-        ]
-
+    us_truck_distance = st.number_input(
+        "U.S. Truck Distance (km)",
+        min_value=0.0,
+        value=float(US_TRUCK_DISTANCE),
+        step=10.0
     )
 
-    grid = st.selectbox(
+    st.markdown("### Warehousing")
 
-        "Manufacturing Grid",
-
-        [
-            "Coal Heavy",
-            "Partial Renewable"
-        ]
-
+    warehouse_months = st.number_input(
+        "Average Warehouse Dwell Time (months)",
+        min_value=0.0,
+        value=WAREHOUSE_MONTHS,
+        step=0.25
     )
 
 #############################################################
-# CALCULATE REDUCTIONS
+# BASELINE CALCULATIONS
 #############################################################
 
-scenario = BASELINE
+baseline_manufacturing = (
+    MANUFACTURING_MT * MANUFACTURING_EF
+)
 
-if vessel=="Panamax":
-    scenario *= .92
+baseline_origin_truck = (
+    MANUFACTURING_MT
+    * ORIGIN_TRUCK_DISTANCE
+    * ORIGIN_TRUCK_EF
+)
 
-elif vessel=="New Panamax":
-    scenario *= .84
+baseline_origin_port = (
+    ORIGIN_TEUS * ORIGIN_PORT_EF
+)
 
-if shipments=="12 Shipments / Year":
-    scenario *= .93
+baseline_ocean = (
+    MANUFACTURING_MT
+    * OCEAN_DISTANCE
+    * OCEAN_EF
+)
 
-if load=="95%":
-    scenario *= .90
+baseline_us_port = (
+    US_PORT_TEUS * US_PORT_EF
+)
 
-if grid=="Partial Renewable":
-    scenario *= .82
+baseline_us_truck = (
+    MANUFACTURING_MT
+    * US_TRUCK_DISTANCE
+    * US_TRUCK_EF
+)
 
-reduction = BASELINE-scenario
+baseline_warehouse = (
+    MANUFACTURING_MT
+    * WAREHOUSE_MONTHS
+    * WAREHOUSE_EF
+)
 
-percent = reduction/BASELINE*100
+calculated_baseline = (
+    baseline_manufacturing
+    + baseline_origin_truck
+    + baseline_origin_port
+    + baseline_ocean
+    + baseline_us_port
+    + baseline_us_truck
+    + baseline_warehouse
+)
+
+#############################################################
+# SCENARIO CALCULATIONS
+#############################################################
+
+scenario_manufacturing = (
+    MANUFACTURING_MT
+    * manufacturing_factor
+)
+
+scenario_origin_truck = baseline_origin_truck
+
+scenario_origin_port = baseline_origin_port
+
+scenario_ocean = (
+    MANUFACTURING_MT
+    * ocean_distance
+    * ocean_factor
+)
+
+scenario_us_port = baseline_us_port
+
+scenario_us_truck = (
+    MANUFACTURING_MT
+    * us_truck_distance
+    * US_TRUCK_EF
+)
+
+scenario_warehouse = (
+    MANUFACTURING_MT
+    * warehouse_months
+    * WAREHOUSE_EF
+)
+
+scenario = (
+    scenario_manufacturing
+    + scenario_origin_truck
+    + scenario_origin_port
+    + scenario_ocean
+    + scenario_us_port
+    + scenario_us_truck
+    + scenario_warehouse
+)
+
+reduction = BASELINE - scenario
+
+percent = (
+    reduction / BASELINE * 100
+)
 
 #############################################################
 # KPI CARDS
 #############################################################
 
-a,b,c,d = st.columns(4)
+a, b, c, d = st.columns(4)
 
 with a:
 
     st.metric(
-
-        "Baseline",
-
-        f"{BASELINE:,.0f} kg"
-
+        "Scenario A Baseline",
+        f"{BASELINE:,.0f} kg CO₂e"
     )
 
 with b:
 
     st.metric(
-
-        "Scenario",
-
-        f"{scenario:,.0f} kg"
-
+        "Sensitivity Scenario",
+        f"{scenario:,.0f} kg CO₂e",
+        delta=f"{scenario - BASELINE:,.0f} kg"
     )
 
 with c:
 
     st.metric(
-
-        "Reduction",
-
-        f"{reduction:,.0f} kg"
-
+        "Change",
+        f"{abs(reduction):,.0f} kg CO₂e"
     )
 
 with d:
 
     st.metric(
-
-        "% Improvement",
-
-        f"{percent:.1f}%"
-
+        "Change %",
+        f"{percent:+.1f}%"
     )
 
 st.divider()
 
 #############################################################
-# BAR CHART
+# BASELINE VS SCENARIO
 #############################################################
 
 compare = pd.DataFrame({
 
-    "Scenario":[
-
-        "Baseline",
-
-        "Optimized"
-
+    "Scenario": [
+        "Scenario A Baseline",
+        "Sensitivity Scenario"
     ],
 
-    "Emissions":[
-
+    "Emissions": [
         BASELINE,
-
         scenario
-
     ]
 
 })
 
-left,right = st.columns(2)
+left, right = st.columns(2)
 
 with left:
 
-    st.subheader("Baseline vs Optimized")
+    st.subheader("Baseline vs Sensitivity Scenario")
 
     fig = px.bar(
-
         compare,
-
         x="Scenario",
-
         y="Emissions",
-
         color="Scenario",
-
         text="Emissions"
+    )
 
+    fig.update_traces(
+        texttemplate="%{text:,.0f}",
+        textposition="outside"
     )
 
     fig.update_layout(
-
         paper_bgcolor="#0f172a",
-
         plot_bgcolor="#0f172a",
-
         font_color="white",
-
-        height=430
-
+        height=430,
+        yaxis_title="kg CO₂e / shipment",
+        xaxis_title=""
     )
 
     st.plotly_chart(
-
         fig,
-
         use_container_width=True
-
     )
 
 #############################################################
-# WATERFALL STYLE
+# WATERFALL
 #############################################################
 
 with right:
 
-    st.subheader("Improvement")
+    st.subheader("Change in Emissions")
 
-    waterfall = go.Figure(go.Waterfall(
+    change = scenario - BASELINE
 
-        orientation="v",
+    waterfall = go.Figure(
+        go.Waterfall(
 
-        measure=["absolute","relative"],
+            orientation="v",
 
-        x=["Baseline","Reduction"],
+            measure=[
+                "absolute",
+                "relative",
+                "relative"
+            ],
 
-        y=[BASELINE,-reduction]
+            x=[
+                "Baseline",
+                "Input Changes",
+                "Scenario"
+            ],
 
-    ))
+            y=[
+                BASELINE,
+                change,
+                0
+            ],
+
+            connector={
+                "line": {
+                    "color": "gray"
+                }
+            }
+
+        )
+    )
 
     waterfall.update_layout(
-
         paper_bgcolor="#0f172a",
-
+        plot_bgcolor="#0f172a",
         font_color="white",
-
-        height=430
-
+        height=430,
+        yaxis_title="kg CO₂e"
     )
 
     st.plotly_chart(
-
         waterfall,
-
         use_container_width=True
-
     )
 
 #############################################################
@@ -258,42 +351,132 @@ with right:
 
 st.divider()
 
-st.subheader("Overall Reduction")
+st.subheader("Overall Emissions Change")
 
-gauge = go.Figure(go.Indicator(
+gauge_value = max(min(abs(percent), 100), 0)
 
-    mode="gauge+number",
+gauge = go.Figure(
+    go.Indicator(
 
-    value=percent,
+        mode="gauge+number",
 
-    number={"suffix":"%"},
+        value=gauge_value,
 
-    gauge={
+        number={
+            "suffix": "%"
+        },
 
-        "axis":{"range":[0,50]},
+        title={
+            "text": "Percentage Change from Baseline"
+        },
 
-        "bar":{"color":"green"}
+        gauge={
 
-    }
+            "axis": {
+                "range": [0, 100]
+            },
 
-))
+            "bar": {
+                "color": "green"
+            }
+
+        }
+
+    )
+)
 
 gauge.update_layout(
-
     paper_bgcolor="#0f172a",
-
     font_color="white",
-
     height=350
-
 )
 
 st.plotly_chart(
-
     gauge,
-
     use_container_width=True
+)
 
+#############################################################
+# LEG-BY-LEG COMPARISON
+#############################################################
+
+st.divider()
+
+st.subheader("Leg-by-Leg Sensitivity Results")
+
+leg_comparison = pd.DataFrame({
+
+    "Supply Chain Leg": [
+
+        "Chemical Manufacturing",
+        "Factory-to-Port Trucking",
+        "Origin Port Handling",
+        "Ocean Freight",
+        "U.S. Port Handling",
+        "U.S. Inland Trucking",
+        "Warehousing / Storage"
+
+    ],
+
+    "Baseline (kg CO₂e)": [
+
+        baseline_manufacturing,
+        baseline_origin_truck,
+        baseline_origin_port,
+        baseline_ocean,
+        baseline_us_port,
+        baseline_us_truck,
+        baseline_warehouse
+
+    ],
+
+    "Sensitivity (kg CO₂e)": [
+
+        scenario_manufacturing,
+        scenario_origin_truck,
+        scenario_origin_port,
+        scenario_ocean,
+        scenario_us_port,
+        scenario_us_truck,
+        scenario_warehouse
+
+    ]
+
+})
+
+leg_comparison["Change (kg CO₂e)"] = (
+    leg_comparison["Sensitivity (kg CO₂e)"]
+    - leg_comparison["Baseline (kg CO₂e)"]
+)
+
+leg_comparison["Change (%)"] = (
+
+    leg_comparison["Change (kg CO₂e)"]
+    / leg_comparison["Baseline (kg CO₂e)"]
+    * 100
+
+)
+
+leg_comparison["Baseline (kg CO₂e)"] = (
+    leg_comparison["Baseline (kg CO₂e)"].round(1)
+)
+
+leg_comparison["Sensitivity (kg CO₂e)"] = (
+    leg_comparison["Sensitivity (kg CO₂e)"].round(1)
+)
+
+leg_comparison["Change (kg CO₂e)"] = (
+    leg_comparison["Change (kg CO₂e)"].round(1)
+)
+
+leg_comparison["Change (%)"] = (
+    leg_comparison["Change (%)"].round(1)
+)
+
+st.dataframe(
+    leg_comparison,
+    use_container_width=True,
+    hide_index=True
 )
 
 #############################################################
@@ -304,84 +487,90 @@ st.divider()
 
 st.subheader("Executive Recommendation")
 
-if percent>25:
+if reduction > 0:
 
-    st.success("""
+    st.success(
+        f"""
+The selected sensitivity assumptions reduce the estimated
+Scenario A footprint from **{BASELINE:,.0f} kg CO₂e** to
+**{scenario:,.0f} kg CO₂e per shipment**.
 
-Excellent scenario.
+This represents a reduction of approximately
+**{reduction:,.0f} kg CO₂e ({percent:.1f}%)**.
 
-The selected operational changes provide
-a significant reduction in greenhouse
-gas emissions and should be considered
-for implementation.
+The model indicates that changes to manufacturing emissions,
+ocean freight distance/emission intensity, and U.S. trucking
+distance can materially affect the overall supply-chain footprint.
+"""
+    )
 
-""")
+elif reduction < 0:
 
-elif percent>15:
+    st.warning(
+        f"""
+The selected assumptions increase the estimated carbon footprint
+by approximately **{abs(reduction):,.0f} kg CO₂e ({abs(percent):.1f}%)**
+compared with the Scenario A baseline.
 
-    st.warning("""
-
-Moderate improvement.
-
-Additional optimization opportunities
-remain throughout the supply chain.
-
-""")
+This demonstrates how increases in transportation distance,
+warehouse dwell time, or emission intensity can increase total
+supply-chain emissions.
+"""
+    )
 
 else:
 
-    st.error("""
-
-Minimal improvement.
-
-Consider changing vessel type,
-increasing load factor,
-or using renewable manufacturing energy.
-
-""")
+    st.info(
+        """
+The selected assumptions produce the same emissions as the
+Scenario A baseline.
+"""
+    )
 
 #############################################################
-# SUMMARY TABLE
+# SCENARIO SUMMARY
 #############################################################
 
 st.divider()
 
+st.subheader("Sensitivity Scenario Summary")
+
 summary = pd.DataFrame({
 
-    "Decision":[
+    "Variable": [
 
-        "Vessel",
-
-        "Shipments",
-
-        "Container Fill",
-
-        "Manufacturing Grid"
+        "Manufacturing Emission Factor",
+        "Ocean Distance",
+        "Ocean Emission Factor",
+        "U.S. Truck Distance",
+        "Warehouse Dwell Time"
 
     ],
 
-    "Selection":[
+    "Baseline": [
 
-        vessel,
+        f"{MANUFACTURING_EF:.0f} kg CO₂e/MT",
+        f"{OCEAN_DISTANCE:,.0f} km",
+        f"{OCEAN_EF:.4f} kg CO₂e/tonne-km",
+        f"{US_TRUCK_DISTANCE:,.0f} km",
+        f"{WAREHOUSE_MONTHS:.2f} months"
 
-        shipments,
+    ],
 
-        load,
+    "Sensitivity": [
 
-        grid
+        f"{manufacturing_factor:.0f} kg CO₂e/MT",
+        f"{ocean_distance:,.0f} km",
+        f"{ocean_factor:.4f} kg CO₂e/tonne-km",
+        f"{us_truck_distance:,.0f} km",
+        f"{warehouse_months:.2f} months"
 
     ]
 
 })
 
-st.subheader("Scenario Summary")
-
 st.dataframe(
-
     summary,
-
     use_container_width=True,
-
     hide_index=True
-
 )
