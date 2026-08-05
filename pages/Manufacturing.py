@@ -342,17 +342,3 @@ Recover and reuse heat generated during manufacturing processes.
 requirements for process heating.
 """)
 
-# ----------------------------------------------------
-# Notes
-# ----------------------------------------------------
-
-st.divider()
-
-st.subheader("Analyst Notes")
-
-notes = st.text_area(
-    "Add observations or recommendations..."
-)
-
-if st.button("Save Notes"):
-    st.success("Notes saved (temporary for now).")
